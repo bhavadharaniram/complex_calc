@@ -1,0 +1,189 @@
+#include <stdio.h>
+#include <math.h>
+
+#define PI 3.14159265358979323846
+
+typedef struct {
+    double real;
+    double imag;
+} Complex;
+
+/* ---------- Basic operations ---------- */
+Complex add(Complex a, Complex b) {
+    Complex r = { a.real + b.real, a.imag + b.imag };
+    return r;
+}
+
+Complex subtract(Complex a, Complex b) {
+    Complex r = { a.real - b.real, a.imag - b.imag };
+    return r;
+}
+
+Complex multiply(Complex a, Complex b) {
+    Complex r;
+    r.real = a.real * b.real - a.imag * b.imag;
+    r.imag = a.real * b.imag + a.imag * b.real;
+    return r;
+}
+
+/* Returns 0 on success, 1 if dividing by zero */
+int divide(Complex a, Complex b, Complex *result) {
+    double denom = b.real * b.real + b.imag * b.imag;
+    if (denom == 0.0) return 1;
+    result->real = (a.real * b.real + a.imag * b.imag) / denom;
+    result->imag = (a.imag * b.real - a.real * b.imag) / denom;
+    return 0;
+}
+
+/* ---------- Single-number operations ---------- */
+Complex conjugate(Complex a) {
+    Complex r = { a.real, -a.imag };
+    return r;
+}
+
+double magnitude(Complex a) {
+    return sqrt(a.real * a.real + a.imag * a.imag);
+}
+
+double phase_degrees(Complex a) {
+    return atan2(a.imag, a.real) * 180.0 / PI;
+}
+
+/* Integer power using De Moivre's theorem */
+Complex power_int(Complex a, int n) {
+    double r = magnitude(a);
+    double theta = atan2(a.imag, a.real);
+    double rn = pow(r, n);
+    Complex res = { rn * cos(n * theta), rn * sin(n * theta) };
+    return res;
+}
+
+Complex square_root(Complex a) {
+    double r = magnitude(a);
+    double theta = atan2(a.imag, a.real);
+    double sr = sqrt(r);
+    Complex res = { sr * cos(theta / 2.0), sr * sin(theta / 2.0) };
+    return res;
+}
+
+/* ---------- Input / Output ---------- */
+Complex read_complex(const char *label) {
+    Complex c;
+    printf("Enter %s (real imag): ", label);
+    while (scanf("%lf %lf", &c.real, &c.imag) != 2) {
+        printf("Invalid input. Enter two numbers (real imag): ");
+        while (getchar() != '\n');   /* clear bad input */
+    }
+    return c;
+}
+
+void print_complex(const char *label, Complex c) {
+    if (fabs(c.real) < 1e-12) c.real = 0.0;   /* clean tiny rounding errors */
+    if (fabs(c.imag) < 1e-12) c.imag = 0.0;
+
+    if (c.imag >= 0)
+        printf("%s = %.4f + %.4fi\n", label, c.real, c.imag);
+    else
+        printf("%s = %.4f - %.4fi\n", label, c.real, fabs(c.imag));
+}
+
+void print_menu(void) {
+    printf("\n===== COMPLEX NUMBER CALCULATOR =====\n");
+    printf(" 1. Addition              (a + b)\n");
+    printf(" 2. Subtraction           (a - b)\n");
+    printf(" 3. Multiplication        (a * b)\n");
+    printf(" 4. Division              (a / b)\n");
+    printf(" 5. Conjugate             (a*)\n");
+    printf(" 6. Magnitude & Phase     (|a|, angle)\n");
+    printf(" 7. Power                 (a^n, integer n)\n");
+    printf(" 8. Square Root           (sqrt(a))\n");
+    printf(" 0. Exit\n");
+    printf("Choose an option: ");
+}
+
+int main(void) {
+    int choice;
+
+    while (1) {
+        print_menu();
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid choice. Try again.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        if (choice == 0) {
+            printf("Goodbye!\n");
+            break;
+        }
+
+        Complex a, b, result;
+
+        switch (choice) {
+            case 1:
+                a = read_complex("first number");
+                b = read_complex("second number");
+                print_complex("Result", add(a, b));
+                break;
+
+            case 2:
+                a = read_complex("first number");
+                b = read_complex("second number");
+                print_complex("Result", subtract(a, b));
+                break;
+
+            case 3:
+                a = read_complex("first number");
+                b = read_complex("second number");
+                print_complex("Result", multiply(a, b));
+                break;
+
+            case 4:
+                a = read_complex("numerator");
+                b = read_complex("denominator");
+                if (divide(a, b, &result) == 0)
+                    print_complex("Result", result);
+                else
+                    printf("Error: division by zero!\n");
+                break;
+
+            case 5:
+                a = read_complex("number");
+                print_complex("Conjugate", conjugate(a));
+                break;
+
+            case 6:
+                a = read_complex("number");
+                printf("Magnitude = %.4f\n", magnitude(a));
+                printf("Phase     = %.4f degrees\n", phase_degrees(a));
+                break;
+
+            case 7: {
+                int n;
+                a = read_complex("number");
+                printf("Enter integer power n: ");
+                if (scanf("%d", &n) != 1) {
+                    printf("Invalid power.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
+                if (a.real == 0.0 && a.imag == 0.0 && n < 0) {
+                    printf("Error: zero cannot be raised to a negative power!\n");
+                    break;
+                }
+                print_complex("Result", power_int(a, n));
+                break;
+            }
+
+            case 8:
+                a = read_complex("number");
+                print_complex("Principal square root", square_root(a));
+                break;
+
+            default:
+                printf("Invalid option. Please choose 0-8.\n");
+        }
+    }
+
+    return 0;
+}
